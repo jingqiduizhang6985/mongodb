@@ -37,14 +37,14 @@ public class MongoUser {
     /**
      * 创建对象
      */
-    public void save(User user) {
-        mongoTemplate.save(user);
+    public User save(User user) {
+        return mongoTemplate.save(user);
     }
 
     /**
      * 更新对象
      */
-    public void updateTest(User user) {
+    public void updateUser(User user) {
         Query query=new Query(Criteria.where("id").is(user.getId()));
         Update update= new Update().set("name", user.getName()).set("idCard",user.getIdCard());
         //更新查询返回结果集的第一条

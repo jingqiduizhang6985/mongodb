@@ -9,6 +9,7 @@ public class User implements Serializable {
     private Integer id;
     private String name;
     private String idCard;
+    private Cat cat;//用户养的猫
 
     public User(){}
 
@@ -42,12 +43,21 @@ public class User implements Serializable {
         this.idCard = idCard;
     }
 
+    public Cat getCat() {
+        return cat;
+    }
+
+    public void setCat(Cat cat) {
+        this.cat = cat;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", idCard='" + idCard + '\'' +
+                ", cat=" + cat +
                 '}';
     }
 }

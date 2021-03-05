@@ -14,7 +14,7 @@ public interface UserService {
     /**
      * 查询单个
      */
-    User findUserById(Integer id);
+    User findUserByName(String name);
     /**
      * add
      */
@@ -22,7 +22,7 @@ public interface UserService {
     /**
      * update
      */
-    User updateUser(User user);
+    void updateUser(User user);
     /**
      * 删除
      */

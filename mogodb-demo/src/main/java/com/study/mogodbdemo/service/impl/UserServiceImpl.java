@@ -2,7 +2,9 @@ package com.study.mogodbdemo.service.impl;
 
 import com.study.mogodbdemo.entity.User;
 import com.study.mogodbdemo.entity.UserParam;
+import com.study.mogodbdemo.mongodb.MongoUser;
 import com.study.mogodbdemo.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,28 +14,31 @@ import java.util.List;
  */
 @Service
 public class UserServiceImpl implements UserService {
+    @Autowired
+    private MongoUser mongoUser;
+
     @Override
     public List<User> findUerList(UserParam userParam) {
-        return null;
+        return mongoUser.findUserList(userParam);
     }
 
     @Override
-    public User findUserById(Integer id) {
-        return null;
+    public User findUserByName(String name) {
+        return mongoUser.findUserByName(name);
     }
 
     @Override
     public User addUser(User user) {
-        return null;
+        return mongoUser.save(user);
     }
 
     @Override
-    public User updateUser(User user) {
-        return null;
+    public void updateUser(User user) {
+         mongoUser.updateUser(user);
     }
 
     @Override
     public void deleteUserById(Integer id) {
-
+        mongoUser.deleteTestById(id);
     }
 }
