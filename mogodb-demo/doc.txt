@@ -30,6 +30,22 @@ db.createUser(
 ******************************************
 use mynewdb 如果有这个数据库则是进入数据  如果没有则是创建数据库
 创建数据库 use mynewdb   这句话创建了数据库 如果这个数据库没有添加数据  show dbs 还是不会看到这个数据库。
+查看当前在那个数据库下
+输入命令 db
+
+删除数据库 先切换到数据库内 再执行删除命令 如要删除test数据库
+use test
+db.dropDatabase
+
+创建集合
+db.createCollection(name,options)
+name 新创建集合的名字
+options 创建参数  可省略
+删除集合
+db.collection.drop()
+例子：
+db.student.drop() //删除 student 集合
+
 **************************************************************
 数据库插入一条数据
 db.inventory.insertOne(
