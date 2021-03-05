@@ -1,0 +1,268 @@
+参考资料：
+https://www.cnblogs.com/timfruit/p/11516381.html
+
+使用mongodb 自带的客户端。
+1.配置环境变量 C:\Program Files\MongoDB\Server\3.4\bin
+2.以管理身份打开cmd
+3.mongo.exe 此时进入命令行。
+*********************************************************
+查看所有数据库: show dbs
+******************************************
+创建管理员并设置密码
+use admin
+db.createUser(
+  {
+    user: "admin", //用户名
+    pwd: "passwd", //密码
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] //设置权限
+  }
+)
+
+use admin
+db.createUser(
+  {
+    user: "admin",
+    pwd: "123456",
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+  }
+)
+
+******************************************
+use mynewdb 如果有这个数据库则是进入数据  如果没有则是创建数据库
+创建数据库 use mynewdb   这句话创建了数据库 如果这个数据库没有添加数据  show dbs 还是不会看到这个数据库。
+**************************************************************
+数据库插入一条数据
+db.inventory.insertOne(
+   { item: "canvas", qty: 100, tags: ["cotton"], size: { h: 28, w: 35.5, uom: "cm" } }
+)
+**************************************************************
+数据库插入多条数据
+db.inventory.insertMany([
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "A" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" }
+]);
+**************************************************************
+1.查询所有的数据
+db.inventory.find( {} )
+相当于sql
+SELECT * FROM inventory
+
+2.精确的等值条件可以使用{<field1>: <value1>, ... }
+db.inventory.find( { status: "D" } )
+相当于SQL SELECT * FROM inventory WHERE status = "D"
+3.使用操作符进行条件查询
+条件查询操作符形式: { <field1>: { <operator1>: <value1> }, ... }
+db.inventory.find( { status: { $in: [ "A", "D" ] } } )
+相当于SQL SELECT * FROM inventory WHERE status in ("A", "D")
+
+4.精准 AND 条件  查询
+查询inventory集合中status="A" 而且 qty<30的文档:
+db.inventory.find( { status: "A", qty: { $lt: 30 } } )
+相当于SQL  SELECT * FROM inventory WHERE status = "A" AND qty < 30
+
+5 精准 OR 条件 查询
+{$or: [   {<field>:<value>, <field>:{<operator>: <value>}}  ]    }
+查询inventory中status="A" 或者 qty<30的文档
+db.inventory.find( { $or: [ { status: "A" }, { qty: { $lt: 30 } } ] } )
+相当于SQL SELECT * FROM inventory WHERE status = "A" OR qty < 30
+
+6 AND , OR 混合查询
+db.inventory.find( {
+     status: "A",
+     $or: [ { qty: { $lt: 30 } }, { item: /^p/ } ]
+} )
+相当于SQL SELECT * FROM inventory WHERE status = "A" AND ( qty < 30 OR item LIKE "p%")
+
+7.投影, 指定返回值
+db.inventory.find( { status: "A" }, { item: 1, status: 1 } )
+相当于SQL: SELECT _id, item, status from inventory WHERE status = "A"
+
+
+8 更新修改文档
+准备数据
+db.inventory.insertMany( [
+   { item: "canvas", qty: 100, size: { h: 28, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "mat", qty: 85, size: { h: 27.9, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "mousepad", qty: 25, size: { h: 19, w: 22.85, uom: "cm" }, status: "P" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" },
+   { item: "sketchbook", qty: 80, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "sketch pad", qty: 95, size: { h: 22.85, w: 30.5, uom: "cm" }, status: "A" }
+] );
+
+在一个集合里更新文档
+db.collection.update()
+db.collection.findAndModify()
+{
+  <update operator>: { <field1>: <value1>, ... },
+  <update operator>: { <field2>: <value2>, ... },
+  ...
+}
+
+将item属性为paper的文档 中的"com.uom"属性设置为"cm", "status"属性设置为"P",  添加lastModified属性的字段,
+并设置为$currentDate当前时间.
+
+db.inventory.updateOne(
+   { item: "paper" },
+   {
+     $set: { "size.uom": "cm", status: "P" },
+     $currentDate: { lastModified: true }
+   }
+)
+
+在一个集合里修改多份文档
+将所有qty<50的文档, 修改对应值, 增加修改时间字段
+db.inventory.updateMany(
+   { "qty": { $lt: 50 } },
+   {
+     $set: { "size.uom": "in", status: "P" },
+     $currentDate: { lastModified: true }
+   }
+)
+
+替换文档
+将item为paper的文档, 替换成指定文档
+db.inventory.replaceOne(
+   { item: "paper" },
+   { item: "paper", instock: [ { warehouse: "A", qty: 60 }, { warehouse: "B", qty: 40 } ] }
+)
+
+修改字段名:
+{$rename: { <field1>: <newName1>, <field2>: <newName2>, ... } }
+将item为canvas的文档中的"status"属性名 改为 "newstatus"
+db.inventory.update({item:"canvas"},{$rename:{"status":"newstatus"}})　　
+
+删除文档
+清空之前的数据:   db.inventory.remove({})
+准备数据:
+db.inventory.insertMany( [
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" },
+] );
+
+删除匹配的多份文档中的第一份文档
+db.inventory.deleteOne({status:"A"})
+
+删除匹配的多份文档
+db.inventory.deleteMany({status:"D"})
+
+删除所有
+db.inventory.deleteMany({})
+查询所有文档
+db.inventory.find( {} )
+
+
+批量写
+db.collection.bulkWrite()提供批量插入,更新,删除的操作.MongoDb的批量插入也可以通过db.collection.insertMany()方法.
+bulk wirte操作可以是有序的(ordered), 也可以是无序的(unordered).
+有序执行一系列的操作, MongoDB将会串行执行. 一旦发生一个操作出错, MongoDB将会立即返回.
+无序执行一系列的操作, MongoDB可以并行执行,但行为不能被保证. 如果出错, MongoDB将会继续执行.
+在分片集合中执行一批有序操作, 将会比无序操作更慢, 因为有序操作需要串行等待执行.
+准备数据:
+db.inventory.insertMany([
+    { "_id" : 1, "char" : "Brisbane", "class" : "monk", "lvl" : 4 },
+    { "_id" : 2, "char" : "Eldon", "class" : "alchemist", "lvl" : 3 },
+    { "_id" : 3, "char" : "Meldane", "class" : "ranger", "lvl" : 3 }
+    ]);
+
+将一系列操作批量执行 :
+db.characters.bulkWrite(
+      [
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 4, "char" : "Dithras", "class" : "barbarian", "lvl" : 4
+               }
+            }
+         },
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 5, "char" : "Taeln", "class" : "fighter", "lvl" : 3
+               }
+            }
+         },
+         { updateOne :
+            {
+               "filter" : { "char" : "Eldon" },
+               "update" : { $set : { "status" : "Critical Injury" } }
+            }
+         },
+         { deleteOne :
+            { "filter" : { "char" : "Brisbane"} }
+         },
+         { replaceOne :
+            {
+               "filter" : { "char" : "Meldane" },
+               "replacement" : { "char" : "Tanys", "class" : "oracle", "lvl" : 4 }
+            }
+         }
+      ]
+   );
+
+聚合pipeline
+准备数据
+db.inventory.insertMany( [
+   { item: "canvas", qty: 100, size: { h: 28, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "mat", qty: 85, size: { h: 27.9, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "mousepad", qty: 25, size: { h: 19, w: 22.85, uom: "cm" }, status: "P" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" },
+   { item: "sketchbook", qty: 80, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "sketch pad", qty: 95, size: { h: 22.85, w: 30.5, uom: "cm" }, status: "A" }
+] );
+使用格式为
+db.collection.aggregate( [ { <stage> }, ... ] )
+使用案例1
+查询所有qty属性值小于100的文档, 并返回所有"qty"的值
+db.inventory.aggregate([
+    {$match:{ "qty":{"$lt":100} }},
+    {$project: {"qty":1} }
+]);
+$match: 为匹配stage, 值可以是正常的查询语句
+$project: 为投影stage, 值是指定需要返回的属性
+
+使用案例2
+对所有"qty"值小于100的文档, 以"status"分组, 并计算"qty"的总数
+db.inventory.aggregate([
+    {$match:{ "qty":{"$lt":100} }},
+    {$group: {_id:"$status", total: {"$sum": "$qty"} }  }
+ ]);
+
+ 索引
+mongo的索引和其他数据库的索引类似,用于加快查询.
+1. 创建索引
+db.collection.createIndex( <key and index type specification>, <options> )
+举例
+db.mycol.createIndex( { name: -1 } )
+如果集合mycol中的name字段没有一样的索引定义, 将创建该索引
+
+索引名字
+使用{ item : 1, quantity: -1 }语句创建索引, 默认索引名字为item_1_quantity_-1
+使用如下语句, 可以指定索引名字
+db.products.createIndex(
+  { item: 1, quantity: -1 } ,
+  { name: "query for inventory" }
+)
+查看索引
+db.mycol.getIndexes()
+
+删除索引
+删除在属性"tx-id"上的索引
+db.accounts.dropIndex( { "tax-id": 1 } )
+删除集合的所有索引
+db.mycol.dropIndexes()
